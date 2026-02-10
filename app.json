@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "myTodo_TS",
+    "slug": "myTodo_TS",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "mytodo",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#7C6FCD"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.birdyf.myTodoTS"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#7C6FCD"
+      },
+      "package": "com.birdyf.myTodoTS",
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      [
+        "expo-system-ui",
+        {
+          "backgroundColor": "#7C6FCD"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
