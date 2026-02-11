@@ -1,7 +1,7 @@
 import {
   collection,
   doc,
-  getDocs,
+  getDocsFromServer,
   setDoc,
   deleteDoc,
   query,
@@ -99,15 +99,18 @@ export async function syncTasksFromFirebase(userId: string): Promise<Task[]> {
     collection(db, TASKS_COLLECTION),
     where('userId', '==', userId)
   );
-  console.log('[syncTasksFromFirebase] calling getDocs, userId:', userId);
+  console.log('[syncTasksFromFirebase] calling getDocsFromServer, userId:', userId);
   let snapshot;
   try {
-    snapshot = await getDocs(q);
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore getDocsFromServer timeout after 15s')), 15000)
+    );
+    snapshot = await Promise.race([getDocsFromServer(q), timeout]);
   } catch (err) {
-    console.error('[syncTasksFromFirebase] getDocs threw:', err);
+    console.error('[syncTasksFromFirebase] getDocsFromServer threw:', err);
     return [];
   }
-  console.log('[syncTasksFromFirebase] getDocs returned', snapshot.docs.length, 'docs');
+  console.log('[syncTasksFromFirebase] getDocsFromServer returned', snapshot.docs.length, 'docs');
   const tasks: Task[] = snapshot.docs.map((d) => {
     const data = d.data();
     return {
@@ -141,7 +144,16 @@ export async function syncTagsFromFirebase(userId: string): Promise<Tag[]> {
     collection(db, TAGS_COLLECTION),
     where('userId', '==', userId)
   );
-  const snapshot = await getDocs(q);
+  let snapshot;
+  try {
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Firestore getDocsFromServer timeout after 15s')), 15000)
+    );
+    snapshot = await Promise.race([getDocsFromServer(q), timeout]);
+  } catch (err) {
+    console.error('[syncTagsFromFirebase] getDocsFromServer threw:', err);
+    return [];
+  }
   const tags: Tag[] = snapshot.docs.map((d) => {
     const data = d.data();
     return {
