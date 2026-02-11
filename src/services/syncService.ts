@@ -4,23 +4,16 @@ import {
   getDocsFromServer,
   setDoc,
   deleteDoc,
-  query,
-  where,
-  Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { Task } from '../models/Task';
 import { Tag } from '../models/Tag';
-import { upsertTask, upsertTag, getAllTasks, getAllTags } from './database';
-
-const TASKS_COLLECTION = 'tasks';
-const TAGS_COLLECTION = 'tags';
+import { upsertTask, upsertTag } from './database';
 
 // ---- Firestore helpers ----
 
-function taskToFirestore(task: Task, userId: string): Record<string, unknown> {
+function taskToFirestore(task: Task): Record<string, unknown> {
   return {
-    userId,
     title: task.title,
     note: task.note ?? null,
     isCompleted: task.isCompleted,
@@ -32,15 +25,14 @@ function taskToFirestore(task: Task, userId: string): Record<string, unknown> {
     completedAt: task.completedAt ?? null,
     taskListId: task.taskListId ?? null,
     order: task.order,
-    tagIds: task.tagIds,
+    tagFirebaseIds: task.tagIds,   // Flutter field name
     localId: task.id,
     updatedAt: new Date().toISOString(),
   };
 }
 
-function tagToFirestore(tag: Tag, userId: string): Record<string, unknown> {
+function tagToFirestore(tag: Tag): Record<string, unknown> {
   return {
-    userId,
     name: tag.name,
     colorHex: tag.colorHex,
     createdAt: tag.createdAt,
@@ -50,16 +42,15 @@ function tagToFirestore(tag: Tag, userId: string): Record<string, unknown> {
 }
 
 // ---- Sync up (local → Firebase) ----
-// These accept the in-memory store arrays so they never block on SQLite.
 
 export async function syncTasksToFirebase(userId: string, tasks: Task[]): Promise<Task[]> {
   const pending = tasks.filter((t) => t.needsSync);
   const synced: Task[] = [];
   for (const task of pending) {
     const ref = task.firebaseId
-      ? doc(db, TASKS_COLLECTION, task.firebaseId)
-      : doc(collection(db, TASKS_COLLECTION));
-    await setDoc(ref, taskToFirestore(task, userId), { merge: true });
+      ? doc(db, 'users', userId, 'tasks', task.firebaseId)
+      : doc(collection(db, 'users', userId, 'tasks'));
+    await setDoc(ref, taskToFirestore(task), { merge: true });
     const updated: Task = {
       ...task,
       firebaseId: ref.id,
@@ -67,7 +58,7 @@ export async function syncTasksToFirebase(userId: string, tasks: Task[]): Promis
       needsSync: false,
     };
     synced.push(updated);
-    upsertTask(updated).catch(() => null); // background SQLite write
+    upsertTask(updated).catch(() => null);
   }
   return synced;
 }
@@ -77,9 +68,9 @@ export async function syncTagsToFirebase(userId: string, tags: Tag[]): Promise<T
   const synced: Tag[] = [];
   for (const tag of pending) {
     const ref = tag.firebaseId
-      ? doc(db, TAGS_COLLECTION, tag.firebaseId)
-      : doc(collection(db, TAGS_COLLECTION));
-    await setDoc(ref, tagToFirestore(tag, userId), { merge: true });
+      ? doc(db, 'users', userId, 'tags', tag.firebaseId)
+      : doc(collection(db, 'users', userId, 'tags'));
+    await setDoc(ref, tagToFirestore(tag), { merge: true });
     const updated: Tag = {
       ...tag,
       firebaseId: ref.id,
@@ -87,7 +78,7 @@ export async function syncTagsToFirebase(userId: string, tags: Tag[]): Promise<T
       needsSync: false,
     };
     synced.push(updated);
-    upsertTag(updated).catch(() => null); // background SQLite write
+    upsertTag(updated).catch(() => null);
   }
   return synced;
 }
@@ -95,17 +86,14 @@ export async function syncTagsToFirebase(userId: string, tags: Tag[]): Promise<T
 // ---- Sync down (Firebase → local) ----
 
 export async function syncTasksFromFirebase(userId: string): Promise<Task[]> {
-  const q = query(
-    collection(db, TASKS_COLLECTION),
-    where('userId', '==', userId)
-  );
+  const col = collection(db, 'users', userId, 'tasks');
   console.log('[syncTasksFromFirebase] calling getDocsFromServer, userId:', userId);
   let snapshot;
   try {
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Firestore getDocsFromServer timeout after 15s')), 15000)
     );
-    snapshot = await Promise.race([getDocsFromServer(q), timeout]);
+    snapshot = await Promise.race([getDocsFromServer(col), timeout]);
   } catch (err) {
     console.error('[syncTasksFromFirebase] getDocsFromServer threw:', err);
     return [];
@@ -126,13 +114,12 @@ export async function syncTasksFromFirebase(userId: string): Promise<Task[]> {
       completedAt: (data.completedAt as string | null) ?? undefined,
       taskListId: (data.taskListId as string | null) ?? undefined,
       order: data.order as number,
-      tagIds: (data.tagIds as string[]) ?? [],
+      tagIds: (data.tagFirebaseIds as string[]) ?? [],  // Flutter field name → local field name
       firebaseId: d.id,
       lastSyncedAt: new Date().toISOString(),
       needsSync: false,
     };
   });
-  // Persist to SQLite in the background — never block sync on it
   for (const task of tasks) {
     upsertTask(task).catch(() => null);
   }
@@ -140,16 +127,13 @@ export async function syncTasksFromFirebase(userId: string): Promise<Task[]> {
 }
 
 export async function syncTagsFromFirebase(userId: string): Promise<Tag[]> {
-  const q = query(
-    collection(db, TAGS_COLLECTION),
-    where('userId', '==', userId)
-  );
+  const col = collection(db, 'users', userId, 'tags');
   let snapshot;
   try {
     const timeout = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error('Firestore getDocsFromServer timeout after 15s')), 15000)
     );
-    snapshot = await Promise.race([getDocsFromServer(q), timeout]);
+    snapshot = await Promise.race([getDocsFromServer(col), timeout]);
   } catch (err) {
     console.error('[syncTagsFromFirebase] getDocsFromServer threw:', err);
     return [];
@@ -172,10 +156,10 @@ export async function syncTagsFromFirebase(userId: string): Promise<Tag[]> {
   return tags;
 }
 
-export async function deleteTaskFromFirebase(firebaseId: string): Promise<void> {
-  await deleteDoc(doc(db, TASKS_COLLECTION, firebaseId));
+export async function deleteTaskFromFirebase(userId: string, firebaseId: string): Promise<void> {
+  await deleteDoc(doc(db, 'users', userId, 'tasks', firebaseId));
 }
 
-export async function deleteTagFromFirebase(firebaseId: string): Promise<void> {
-  await deleteDoc(doc(db, TAGS_COLLECTION, firebaseId));
+export async function deleteTagFromFirebase(userId: string, firebaseId: string): Promise<void> {
+  await deleteDoc(doc(db, 'users', userId, 'tags', firebaseId));
 }

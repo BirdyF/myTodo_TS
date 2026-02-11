@@ -15,6 +15,7 @@ import {
 interface TaskState {
   tasks: Task[];
   isLoading: boolean;
+  userId: string | null;
   loadTasks: () => Promise<void>;
   addTask: (partial: Partial<Task> & { title: string }) => Promise<Task>;
   updateTask: (id: string, updates: Partial<Task>) => Promise<void>;
@@ -36,6 +37,7 @@ interface TaskState {
 export const useTaskStore = create<TaskState>((set, get) => ({
   tasks: [],
   isLoading: false,
+  userId: null,
 
   loadTasks: async () => {
     set({ isLoading: true });
@@ -115,23 +117,25 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
 
   deleteTask: async (id) => {
-    const { tasks } = get();
+    const { tasks, userId } = get();
     const task = tasks.find((t) => t.id === id);
     set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
     dbDeleteTask(id).catch(() => null);
-    if (task?.firebaseId) {
-      deleteTaskFromFirebase(task.firebaseId).catch(() => null);
+    if (task?.firebaseId && userId) {
+      deleteTaskFromFirebase(userId, task.firebaseId).catch(() => null);
     }
   },
 
   deleteCompletedTasks: async () => {
-    const { tasks } = get();
+    const { tasks, userId } = get();
     const completed = tasks.filter((t) => t.isCompleted);
     set((state) => ({ tasks: state.tasks.filter((t) => !t.isCompleted) }));
     dbDeleteCompletedTasks().catch(() => null);
-    for (const task of completed) {
-      if (task.firebaseId) {
-        deleteTaskFromFirebase(task.firebaseId).catch(() => null);
+    if (userId) {
+      for (const task of completed) {
+        if (task.firebaseId) {
+          deleteTaskFromFirebase(userId, task.firebaseId).catch(() => null);
+        }
       }
     }
   },
@@ -149,6 +153,7 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
 
   syncWithFirebase: async (userId) => {
+    set({ userId });
     const { tasks } = get();
     console.log('[sync] starting. in-memory tasks:', tasks.length, tasks.map(t => ({id: t.id, title: t.title, needsSync: t.needsSync, isCompleted: t.isCompleted})));
 

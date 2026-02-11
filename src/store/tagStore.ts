@@ -10,6 +10,7 @@ import {
 interface TagState {
   tags: Tag[];
   isLoading: boolean;
+  userId: string | null;
   loadTags: () => Promise<void>;
   addTag: (name: string, colorHex: string) => Promise<Tag>;
   updateTag: (id: string, updates: Partial<Tag>) => Promise<void>;
@@ -20,6 +21,7 @@ interface TagState {
 export const useTagStore = create<TagState>((set, get) => ({
   tags: [],
   isLoading: false,
+  userId: null,
 
   loadTags: async () => {
     set({ isLoading: true });
@@ -57,16 +59,17 @@ export const useTagStore = create<TagState>((set, get) => ({
   },
 
   deleteTag: async (id: string) => {
-    const { tags } = get();
+    const { tags, userId } = get();
     const tag = tags.find((t) => t.id === id);
     set((state) => ({ tags: state.tags.filter((t) => t.id !== id) }));
     dbDeleteTag(id).catch(() => null);
-    if (tag?.firebaseId) {
-      deleteTagFromFirebase(tag.firebaseId).catch(() => null);
+    if (tag?.firebaseId && userId) {
+      deleteTagFromFirebase(userId, tag.firebaseId).catch(() => null);
     }
   },
 
   syncWithFirebase: async (userId: string) => {
+    set({ userId });
     const { tags } = get();
     // Upload pending tags using in-memory store (no SQLite read)
     const syncedTags = await syncTagsToFirebase(userId, tags);
