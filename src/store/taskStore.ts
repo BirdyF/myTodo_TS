@@ -47,8 +47,8 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const { tasks } = get();
     const maxOrder = tasks.length > 0 ? Math.max(...tasks.map((t) => t.order)) + 1 : 0;
     const task = createTask({ ...partial, order: maxOrder });
-    await upsertTask(task);
     set((state) => ({ tasks: [...state.tasks, task] }));
+    upsertTask(task).catch(() => null);
     return task;
   },
 
@@ -57,10 +57,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const existing = tasks.find((t) => t.id === id);
     if (!existing) return;
     const updated: Task = { ...existing, ...updates, needsSync: true };
-    await upsertTask(updated);
     set((state) => ({
       tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
+    upsertTask(updated).catch(() => null);
   },
 
   toggleComplete: async (id) => {
@@ -73,10 +73,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       completedAt: !task.isCompleted ? new Date().toISOString() : undefined,
       needsSync: true,
     };
-    await upsertTask(updated);
     set((state) => ({
       tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
+    upsertTask(updated).catch(() => null);
   },
 
   toggleImportant: async (id) => {
@@ -84,10 +84,10 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const task = tasks.find((t) => t.id === id);
     if (!task) return;
     const updated: Task = { ...task, isImportant: !task.isImportant, needsSync: true };
-    await upsertTask(updated);
     set((state) => ({
       tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
+    upsertTask(updated).catch(() => null);
   },
 
   toggleMyDay: async (id) => {
@@ -95,30 +95,30 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     const task = tasks.find((t) => t.id === id);
     if (!task) return;
     const updated: Task = { ...task, isMyDay: !task.isMyDay, needsSync: true };
-    await upsertTask(updated);
     set((state) => ({
       tasks: state.tasks.map((t) => (t.id === id ? updated : t)),
     }));
+    upsertTask(updated).catch(() => null);
   },
 
   deleteTask: async (id) => {
     const { tasks } = get();
     const task = tasks.find((t) => t.id === id);
-    await dbDeleteTask(id);
     set((state) => ({ tasks: state.tasks.filter((t) => t.id !== id) }));
+    dbDeleteTask(id).catch(() => null);
     if (task?.firebaseId) {
-      await deleteTaskFromFirebase(task.firebaseId).catch(() => null);
+      deleteTaskFromFirebase(task.firebaseId).catch(() => null);
     }
   },
 
   deleteCompletedTasks: async () => {
     const { tasks } = get();
     const completed = tasks.filter((t) => t.isCompleted);
-    await dbDeleteCompletedTasks();
     set((state) => ({ tasks: state.tasks.filter((t) => !t.isCompleted) }));
+    dbDeleteCompletedTasks().catch(() => null);
     for (const task of completed) {
       if (task.firebaseId) {
-        await deleteTaskFromFirebase(task.firebaseId).catch(() => null);
+        deleteTaskFromFirebase(task.firebaseId).catch(() => null);
       }
     }
   },
