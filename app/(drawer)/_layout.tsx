@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
 } from 'react-native';
+import { BottomTabBar } from '../../src/components/BottomTabBar';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
@@ -100,61 +101,64 @@ function DrawerContent(props: Record<string, unknown>) {
 
 export default function DrawerLayout() {
   return (
-    <Drawer
-      drawerContent={(props) => <DrawerContent {...props} />}
-      screenOptions={{
-        headerStyle: { backgroundColor: Colors.primary },
-        headerTintColor: Colors.headerText,
-        headerTitleStyle: { fontWeight: '700', fontSize: 20 },
-        drawerStyle: {
-          backgroundColor: Colors.drawerBackground,
-          width: 280,
-        },
-        drawerActiveTintColor: Colors.primary,
-        drawerInactiveTintColor: Colors.textSecondary,
-      }}
-    >
-      <Drawer.Screen
-        name="index"
-        options={{
-          title: 'All Tasks',
-          drawerLabel: 'All Tasks',
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="list" size={size} color={color} />
-          ),
+    <View style={{ flex: 1 }}>
+      <Drawer
+        drawerContent={(props) => <DrawerContent {...props} />}
+        screenOptions={{
+          headerStyle: { backgroundColor: Colors.primary },
+          headerTintColor: Colors.headerText,
+          headerTitleStyle: { fontWeight: '700', fontSize: 20 },
+          drawerStyle: {
+            backgroundColor: Colors.drawerBackground,
+            width: 280,
+          },
+          drawerActiveTintColor: Colors.primary,
+          drawerInactiveTintColor: Colors.textSecondary,
         }}
-      />
-      <Drawer.Screen
-        name="my-day"
-        options={{
-          title: 'My Day',
-          drawerLabel: 'My Day',
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="sunny" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="important"
-        options={{
-          title: 'Important',
-          drawerLabel: 'Important',
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="star" size={size} color={color} />
-          ),
-        }}
-      />
-      <Drawer.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          drawerLabel: 'Settings',
-          drawerIcon: ({ color, size }) => (
-            <Ionicons name="settings" size={size} color={color} />
-          ),
-        }}
-      />
-    </Drawer>
+      >
+        <Drawer.Screen
+          name="index"
+          options={{
+            title: 'All Tasks',
+            drawerLabel: 'All Tasks',
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="list" size={size} color={color} />
+            ),
+          }}
+        />
+        <Drawer.Screen
+          name="my-day"
+          options={{
+            title: 'My Day',
+            drawerLabel: 'My Day',
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="sunny" size={size} color={color} />
+            ),
+          }}
+        />
+        <Drawer.Screen
+          name="important"
+          options={{
+            title: 'Important',
+            drawerLabel: 'Important',
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="star" size={size} color={color} />
+            ),
+          }}
+        />
+        <Drawer.Screen
+          name="settings"
+          options={{
+            title: 'Settings',
+            drawerLabel: 'Settings',
+            drawerIcon: ({ color, size }) => (
+              <Ionicons name="settings" size={size} color={color} />
+            ),
+          }}
+        />
+      </Drawer>
+      <BottomTabBar />
+    </View>
   );
 }
 
