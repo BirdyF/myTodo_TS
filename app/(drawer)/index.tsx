@@ -9,6 +9,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTaskStore } from '../../src/store/taskStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useTagStore } from '../../src/store/tagStore';
 import { TaskItem } from '../../src/components/TaskItem';
 import { AddTaskInput } from '../../src/components/AddTaskInput';
@@ -18,7 +19,7 @@ import { Colors } from '../../src/constants/colors';
 
 export default function AllTasksScreen() {
   const router = useRouter();
-  const tasks = useTaskStore((state) => state.tasks.filter((t) => !t.isCompleted));
+  const tasks = useTaskStore(useShallow((state) => state.tasks.filter((t) => !t.isCompleted)));
   const { addTask, toggleComplete, toggleImportant } = useTaskStore();
   const { tags } = useTagStore();
 

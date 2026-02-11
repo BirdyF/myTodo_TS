@@ -2,6 +2,7 @@ import React, { useCallback } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTaskStore } from '../../src/store/taskStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useTagStore } from '../../src/store/tagStore';
 import { TaskItem } from '../../src/components/TaskItem';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -10,7 +11,7 @@ import { Colors } from '../../src/constants/colors';
 
 export default function ImportantScreen() {
   const router = useRouter();
-  const tasks = useTaskStore((state) => state.tasks.filter((t) => t.isImportant && !t.isCompleted));
+  const tasks = useTaskStore(useShallow((state) => state.tasks.filter((t) => t.isImportant && !t.isCompleted)));
   const { toggleComplete, toggleImportant } = useTaskStore();
   const { tags } = useTagStore();
 
