@@ -23,8 +23,19 @@ export const useTagStore = create<TagState>((set, get) => ({
 
   loadTags: async () => {
     set({ isLoading: true });
-    const tags = await getAllTags();
-    set({ tags, isLoading: false });
+    getAllTags()
+      .then((storedTags) => {
+        set((state) => {
+          const map = new Map(storedTags.map((t) => [t.id, t]));
+          for (const t of state.tags) {
+            map.set(t.id, t);
+          }
+          return { tags: Array.from(map.values()), isLoading: false };
+        });
+      })
+      .catch(() => {
+        set({ isLoading: false });
+      });
   },
 
   addTag: async (name: string, colorHex: string) => {

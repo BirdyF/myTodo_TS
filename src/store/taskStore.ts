@@ -39,8 +39,21 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   loadTasks: async () => {
     set({ isLoading: true });
-    const tasks = await getAllTasks();
-    set({ tasks, isLoading: false });
+    getAllTasks()
+      .then((storedTasks) => {
+        set((state) => {
+          // Start with SQLite data, but in-memory tasks always win
+          // (they may be newer: added optimistically or downloaded via sync)
+          const map = new Map(storedTasks.map((t) => [t.id, t]));
+          for (const t of state.tasks) {
+            map.set(t.id, t);
+          }
+          return { tasks: Array.from(map.values()), isLoading: false };
+        });
+      })
+      .catch(() => {
+        set({ isLoading: false });
+      });
   },
 
   addTask: async (partial) => {
