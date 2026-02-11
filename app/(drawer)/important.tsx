@@ -10,9 +10,9 @@ import { Colors } from '../../src/constants/colors';
 
 export default function ImportantScreen() {
   const router = useRouter();
-  const { importantTasks, toggleComplete, toggleImportant } = useTaskStore();
+  const tasks = useTaskStore((state) => state.tasks.filter((t) => t.isImportant && !t.isCompleted));
+  const { toggleComplete, toggleImportant } = useTaskStore();
   const { tags } = useTagStore();
-  const tasks = importantTasks();
 
   const handleTaskPress = useCallback(
     (task: Task) => {

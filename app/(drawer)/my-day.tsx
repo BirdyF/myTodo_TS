@@ -11,9 +11,9 @@ import { Colors } from '../../src/constants/colors';
 
 export default function MyDayScreen() {
   const router = useRouter();
-  const { myDayTasks, addTask, toggleComplete, toggleImportant } = useTaskStore();
+  const tasks = useTaskStore((state) => state.tasks.filter((t) => t.isMyDay && !t.isCompleted));
+  const { addTask, toggleComplete, toggleImportant } = useTaskStore();
   const { tags } = useTagStore();
-  const tasks = myDayTasks();
 
   const handleAddTask = useCallback(
     async (title: string) => {

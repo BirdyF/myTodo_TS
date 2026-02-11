@@ -18,9 +18,9 @@ import { Colors } from '../../src/constants/colors';
 
 export default function AllTasksScreen() {
   const router = useRouter();
-  const { activeTasks, addTask, toggleComplete, toggleImportant } = useTaskStore();
+  const tasks = useTaskStore((state) => state.tasks.filter((t) => !t.isCompleted));
+  const { addTask, toggleComplete, toggleImportant } = useTaskStore();
   const { tags } = useTagStore();
-  const tasks = activeTasks();
 
   const handleAddTask = useCallback(
     async (title: string) => {
