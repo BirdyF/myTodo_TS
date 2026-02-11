@@ -150,10 +150,16 @@ export const useTaskStore = create<TaskState>((set, get) => ({
 
   syncWithFirebase: async (userId) => {
     const { tasks } = get();
+    console.log('[sync] starting. in-memory tasks:', tasks.length, tasks.map(t => ({id: t.id, title: t.title, needsSync: t.needsSync, isCompleted: t.isCompleted})));
+
     // Upload pending tasks using in-memory store (no SQLite read)
     const syncedTasks = await syncTasksToFirebase(userId, tasks);
+    console.log('[sync] uploaded syncedTasks:', syncedTasks.length, syncedTasks.map(t => ({id: t.id, firebaseId: t.firebaseId})));
+
     // Download from Firebase (SQLite writes happen in the background)
     const remoteTasks = await syncTasksFromFirebase(userId);
+    console.log('[sync] downloaded remoteTasks:', remoteTasks.length, remoteTasks.map(t => ({id: t.id, title: t.title, isCompleted: t.isCompleted})));
+
     set((state) => {
       const map = new Map(state.tasks.map((t) => [t.id, t]));
       for (const st of syncedTasks) {
@@ -162,7 +168,9 @@ export const useTaskStore = create<TaskState>((set, get) => ({
       for (const rt of remoteTasks) {
         map.set(rt.id, rt); // merge remote tasks
       }
-      return { tasks: Array.from(map.values()) };
+      const merged = Array.from(map.values());
+      console.log('[sync] after merge, store tasks:', merged.length, merged.map(t => ({id: t.id, title: t.title, isCompleted: t.isCompleted})));
+      return { tasks: merged };
     });
   },
 
