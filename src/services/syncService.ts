@@ -99,7 +99,15 @@ export async function syncTasksFromFirebase(userId: string): Promise<Task[]> {
     collection(db, TASKS_COLLECTION),
     where('userId', '==', userId)
   );
-  const snapshot = await getDocs(q);
+  console.log('[syncTasksFromFirebase] calling getDocs, userId:', userId);
+  let snapshot;
+  try {
+    snapshot = await getDocs(q);
+  } catch (err) {
+    console.error('[syncTasksFromFirebase] getDocs threw:', err);
+    return [];
+  }
+  console.log('[syncTasksFromFirebase] getDocs returned', snapshot.docs.length, 'docs');
   const tasks: Task[] = snapshot.docs.map((d) => {
     const data = d.data();
     return {

@@ -157,7 +157,13 @@ export const useTaskStore = create<TaskState>((set, get) => ({
     console.log('[sync] uploaded syncedTasks:', syncedTasks.length, syncedTasks.map(t => ({id: t.id, firebaseId: t.firebaseId})));
 
     // Download from Firebase (SQLite writes happen in the background)
-    const remoteTasks = await syncTasksFromFirebase(userId);
+    console.log('[sync] calling syncTasksFromFirebase...');
+    let remoteTasks: import('../models/Task').Task[] = [];
+    try {
+      remoteTasks = await syncTasksFromFirebase(userId);
+    } catch (err) {
+      console.error('[sync] syncTasksFromFirebase threw:', err);
+    }
     console.log('[sync] downloaded remoteTasks:', remoteTasks.length, remoteTasks.map(t => ({id: t.id, title: t.title, isCompleted: t.isCompleted})));
 
     set((state) => {
