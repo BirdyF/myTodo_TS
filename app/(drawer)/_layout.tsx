@@ -22,6 +22,7 @@ function DrawerContent(props: Record<string, unknown>) {
     { label: 'All Tasks', icon: 'list', path: '/' as const },
     { label: 'My Day', icon: 'sunny', path: '/my-day' as const },
     { label: 'Important', icon: 'star', path: '/important' as const },
+    { label: 'Settings', icon: 'settings', path: '/settings' as const },
   ];
 
   const isActive = (path: string) => {
