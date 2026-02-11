@@ -50,39 +50,46 @@ function tagToFirestore(tag: Tag, userId: string): Record<string, unknown> {
 }
 
 // ---- Sync up (local → Firebase) ----
+// These accept the in-memory store arrays so they never block on SQLite.
 
-export async function syncPendingTasks(userId: string): Promise<void> {
-  const tasks = await getAllTasks();
+export async function syncTasksToFirebase(userId: string, tasks: Task[]): Promise<Task[]> {
   const pending = tasks.filter((t) => t.needsSync);
+  const synced: Task[] = [];
   for (const task of pending) {
     const ref = task.firebaseId
       ? doc(db, TASKS_COLLECTION, task.firebaseId)
       : doc(collection(db, TASKS_COLLECTION));
     await setDoc(ref, taskToFirestore(task, userId), { merge: true });
-    await upsertTask({
+    const updated: Task = {
       ...task,
       firebaseId: ref.id,
       lastSyncedAt: new Date().toISOString(),
       needsSync: false,
-    });
+    };
+    synced.push(updated);
+    upsertTask(updated).catch(() => null); // background SQLite write
   }
+  return synced;
 }
 
-export async function syncPendingTags(userId: string): Promise<void> {
-  const tags = await getAllTags();
+export async function syncTagsToFirebase(userId: string, tags: Tag[]): Promise<Tag[]> {
   const pending = tags.filter((t) => t.needsSync);
+  const synced: Tag[] = [];
   for (const tag of pending) {
     const ref = tag.firebaseId
       ? doc(db, TAGS_COLLECTION, tag.firebaseId)
       : doc(collection(db, TAGS_COLLECTION));
     await setDoc(ref, tagToFirestore(tag, userId), { merge: true });
-    await upsertTag({
+    const updated: Tag = {
       ...tag,
       firebaseId: ref.id,
       lastSyncedAt: new Date().toISOString(),
       needsSync: false,
-    });
+    };
+    synced.push(updated);
+    upsertTag(updated).catch(() => null); // background SQLite write
   }
+  return synced;
 }
 
 // ---- Sync down (Firebase → local) ----
@@ -114,8 +121,9 @@ export async function syncTasksFromFirebase(userId: string): Promise<Task[]> {
       needsSync: false,
     };
   });
+  // Persist to SQLite in the background — never block sync on it
   for (const task of tasks) {
-    await upsertTask(task);
+    upsertTask(task).catch(() => null);
   }
   return tasks;
 }
@@ -139,7 +147,7 @@ export async function syncTagsFromFirebase(userId: string): Promise<Tag[]> {
     };
   });
   for (const tag of tags) {
-    await upsertTag(tag);
+    upsertTag(tag).catch(() => null);
   }
   return tags;
 }

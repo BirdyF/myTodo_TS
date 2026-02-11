@@ -7,7 +7,7 @@ import {
   deleteCompletedTasks as dbDeleteCompletedTasks,
 } from '../services/database';
 import {
-  syncPendingTasks,
+  syncTasksToFirebase,
   syncTasksFromFirebase,
   deleteTaskFromFirebase,
 } from '../services/syncService';
@@ -136,12 +136,18 @@ export const useTaskStore = create<TaskState>((set, get) => ({
   },
 
   syncWithFirebase: async (userId) => {
-    await syncPendingTasks(userId);
+    const { tasks } = get();
+    // Upload pending tasks using in-memory store (no SQLite read)
+    const syncedTasks = await syncTasksToFirebase(userId, tasks);
+    // Download from Firebase (SQLite writes happen in the background)
     const remoteTasks = await syncTasksFromFirebase(userId);
     set((state) => {
       const map = new Map(state.tasks.map((t) => [t.id, t]));
+      for (const st of syncedTasks) {
+        map.set(st.id, st); // mark as synced (needsSync: false, firebaseId set)
+      }
       for (const rt of remoteTasks) {
-        map.set(rt.id, rt);
+        map.set(rt.id, rt); // merge remote tasks
       }
       return { tasks: Array.from(map.values()) };
     });
