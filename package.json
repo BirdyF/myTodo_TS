@@ -8,7 +8,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web --clear",
     "build:web": "expo export --platform web",
-    "deploy:web": "EXPO_BASE_URL=/myTodo_TS expo export --platform web && gh-pages -d dist"
+    "deploy:github": "bash scripts/deploy-gh-pages.sh"
   },
   "dependencies": {
     "@expo/metro-runtime": "^6.1.2",
@@ -39,8 +39,7 @@
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@types/react": "~19.1.0",
-    "gh-pages": "^6.3.0",
-    "typescript": "~5.9.2"
+"typescript": "~5.9.2"
   },
   "private": true
 }
