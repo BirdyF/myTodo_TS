@@ -22,7 +22,7 @@ echo "Committing and pushing to BirdyF.github.io ..."
 cd "$PAGES_DIR"
 git add myTodo_TS/
 git commit -m "Deploy myTodo_TS web app - $(date '+%Y-%m-%d %H:%M')"
-git push origin main
+git push origin master
 
 echo ""
 echo "Deployed to https://BirdyF.github.io/myTodo_TS/"
