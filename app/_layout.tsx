@@ -1,10 +1,9 @@
 import 'react-native-gesture-handler';
 import React, { useEffect } from 'react';
+import { InteractionManager } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../src/services/firebase';
 import { useAuthStore } from '../src/store/authStore';
 import { useTaskStore } from '../src/store/taskStore';
 import { useTagStore } from '../src/store/tagStore';
@@ -16,15 +15,27 @@ export default function RootLayout() {
   const { loadTags } = useTagStore();
 
   useEffect(() => {
-    // Initialize local data
+    // Load local SQLite data immediately — fast, no network required
     loadTasks();
     loadTags();
 
-    // Listen to Firebase auth state
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    // Defer Firebase initialization until after first render + interactions.
+    // This keeps the JS thread free during startup so the UI is responsive sooner.
+    let unsubscribe: (() => void) | undefined;
+    const task = InteractionManager.runAfterInteractions(async () => {
+      const [{ onAuthStateChanged }, { auth }] = await Promise.all([
+        import('firebase/auth'),
+        import('../src/services/firebase'),
+      ]);
+      unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+      });
     });
-    return unsubscribe;
+
+    return () => {
+      task.cancel();
+      unsubscribe?.();
+    };
   }, []);
 
   return (
