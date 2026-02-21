@@ -11,10 +11,15 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import Constants from 'expo-constants';
 import { useAuthStore } from '../../src/store/authStore';
 import { useTaskStore } from '../../src/store/taskStore';
 import { useTagStore } from '../../src/store/tagStore';
 import { Colors } from '../../src/constants/colors';
+
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+const BUILD_NUMBER = process.env.EXPO_PUBLIC_BUILD_NUMBER ?? 'dev';
+const GIT_HASH = process.env.EXPO_PUBLIC_GIT_HASH ?? '';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -179,6 +184,23 @@ export default function SettingsScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* About Section */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>About</Text>
+        <View style={styles.row}>
+          <Ionicons name="information-circle" size={20} color={Colors.primary} />
+          <Text style={styles.rowLabel}>Version</Text>
+          <Text style={styles.versionText}>v{APP_VERSION}</Text>
+        </View>
+        <View style={styles.row}>
+          <Ionicons name="hammer" size={20} color={Colors.primary} />
+          <Text style={styles.rowLabel}>Build</Text>
+          <Text style={styles.versionText}>
+            #{BUILD_NUMBER}{GIT_HASH ? ` (${GIT_HASH})` : ''}
+          </Text>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -289,5 +311,9 @@ const styles = StyleSheet.create({
   },
   destructiveLabel: {
     color: Colors.error,
+  },
+  versionText: {
+    fontSize: 14,
+    color: Colors.textMuted,
   },
 });
