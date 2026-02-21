@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Appends app version and build number to every commit message.
+
+COMMIT_MSG_FILE=$1
+COMMIT_SOURCE=$2
+
+# Skip merge, squash, and fixup commits
+if [ "$COMMIT_SOURCE" = "merge" ] || \
+   [ "$COMMIT_SOURCE" = "squash" ] || \
+   [ "$COMMIT_SOURCE" = "commit" ]; then
+  exit 0
+fi
+
+APP_VERSION=$(node -p "require('./app.json').expo.version" 2>/dev/null || echo "?")
+# +1 because the commit hasn't been created yet
+BUILD_NUMBER=$(($(git rev-list --count HEAD 2>/dev/null || echo "0") + 1))
+
+printf "\nApp: v%s (build #%s)" "$APP_VERSION" "$BUILD_NUMBER" >> "$COMMIT_MSG_FILE"
